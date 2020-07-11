@@ -14,6 +14,7 @@
 # limitations under the License.
 #
 
+import os
 import pytest
 import requests
 
@@ -39,9 +40,10 @@ def test_metadata():
     assert r.status_code == 200
 
     metadata = r.json()
-    assert metadata['id'] == 'ssd_mobilenet_v1_coco_2017_11_17-tf-mobilenet'
-    assert metadata['name'] == 'ssd_mobilenet_v1_coco_2017_11_17 TensorFlow Model'
-    assert metadata['description'] == 'ssd_mobilenet_v1_coco_2017_11_17 TensorFlow model trained on MobileNet'
+    model = os.getenv('MODEL')
+    assert metadata['id'] == f'object-detector-{model}'
+    assert metadata['name'] == f'{model} TensorFlow Object Detector Model'
+    assert metadata['description'] == f'{model} TensorFlow object detector model'
     assert metadata['type'] == 'Object Detection'
     assert metadata['source'] == 'https://developer.ibm.com/exchanges/models/all/max-object-detector/'
     assert metadata['license'] == 'ApacheV2'
@@ -60,39 +62,45 @@ def test_predict():
 
     assert response['status'] == 'ok'
 
+    # One is Teddy Bear and the other is Child
+    assert frozenset((response['predictions'][0]['label_id'],
+                      response['predictions'][1]['label_id'])) == frozenset(('1', '88'))
+
     #  Teddy Bear
-    assert response['predictions'][0]['label_id'] == '88'
-    assert response['predictions'][0]['label'] == 'teddy bear'
-    assert response['predictions'][0]['probability'] > 0.95
+    bear_index = 0 if response['predictions'][0]['label_id'] == '88' else 1
+    assert response['predictions'][bear_index]['label_id'] == '88'
+    assert response['predictions'][bear_index]['label'] == 'teddy bear'
+    assert response['predictions'][bear_index]['probability'] > 0.95
 
-    assert response['predictions'][0]['detection_box'][0] > 0.25
-    assert response['predictions'][0]['detection_box'][0] < 0.3
+    assert response['predictions'][bear_index]['detection_box'][0] > 0.25
+    assert response['predictions'][bear_index]['detection_box'][0] < 0.3
 
-    assert response['predictions'][0]['detection_box'][1] > 0.5
-    assert response['predictions'][0]['detection_box'][1] < 0.6
+    assert response['predictions'][bear_index]['detection_box'][1] > 0.5
+    assert response['predictions'][bear_index]['detection_box'][1] < 0.6
 
-    assert response['predictions'][0]['detection_box'][2] > 0.6
-    assert response['predictions'][0]['detection_box'][2] < 0.7
+    assert response['predictions'][bear_index]['detection_box'][2] > 0.6
+    assert response['predictions'][bear_index]['detection_box'][2] < 0.7
 
-    assert response['predictions'][0]['detection_box'][3] > 0.8
-    assert response['predictions'][0]['detection_box'][3] < 0.9
+    assert response['predictions'][bear_index]['detection_box'][3] > 0.8
+    assert response['predictions'][bear_index]['detection_box'][3] < 0.9
 
     # Child
-    assert response['predictions'][1]['label_id'] == '1'
-    assert response['predictions'][1]['label'] == 'person'
-    assert response['predictions'][1]['probability'] > 0.95
+    child_index = 0 if bear_index == 1 else 1
+    assert response['predictions'][child_index]['label_id'] == '1'
+    assert response['predictions'][child_index]['label'] == 'person'
+    assert response['predictions'][child_index]['probability'] > 0.95
 
-    assert response['predictions'][1]['detection_box'][0] > 0.2
-    assert response['predictions'][1]['detection_box'][0] < 0.3
+    assert response['predictions'][child_index]['detection_box'][0] > 0.2
+    assert response['predictions'][child_index]['detection_box'][0] < 0.3
 
-    assert response['predictions'][1]['detection_box'][1] > 0.2
-    assert response['predictions'][1]['detection_box'][1] < 0.3
+    assert response['predictions'][child_index]['detection_box'][1] > 0.2
+    assert response['predictions'][child_index]['detection_box'][1] < 0.3
 
-    assert response['predictions'][1]['detection_box'][2] > 0.6
-    assert response['predictions'][1]['detection_box'][2] < 0.7
+    assert response['predictions'][child_index]['detection_box'][2] > 0.6
+    assert response['predictions'][child_index]['detection_box'][2] < 0.7
 
-    assert response['predictions'][1]['detection_box'][3] > 0.5
-    assert response['predictions'][1]['detection_box'][3] < 0.6
+    assert response['predictions'][child_index]['detection_box'][3] > 0.5
+    assert response['predictions'][child_index]['detection_box'][3] < 0.6
 
 
 if __name__ == '__main__':
