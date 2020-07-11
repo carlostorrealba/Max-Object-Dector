@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.com/IBM/MAX-Object-Detector.svg?branch=master)](https://travis-ci.com/IBM/MAX-Object-Detector) [![Website Status](https://img.shields.io/website/http/max-object-detector.max.us-south.containers.appdomain.cloud/swagger.json.svg?label=api+demo)](http://max-object-detector.max.us-south.containers.appdomain.cloud/)
+[![Build Status](https://travis-ci.com/IBM/MAX-Object-Detector.svg?branch=master)](https://travis-ci.com/IBM/MAX-Object-Detector) [![Website Status](https://img.shields.io/website/http/max-object-detector.codait-prod-41208c73af8fca213512856c7a09db52-0000.us-east.containers.appdomain.cloud/swagger.json.svg?label=api+demo)](http://max-object-detector.codait-prod-41208c73af8fca213512856c7a09db52-0000.us-east.containers.appdomain.cloud)
 
 [<img src="docs/deploy-max-to-ibm-cloud-with-kubernetes-button.png" width="400px">](http://ibm.biz/max-to-ibm-cloud-tutorial)
 
@@ -6,12 +6,12 @@
 
 This repository contains code to instantiate and deploy an object detection model. This model recognizes the objects present in an image from the 80 different high-level classes of objects in the [COCO Dataset](http://mscoco.org/). The model consists of a deep convolutional net base model for image feature extraction, together with additional convolutional layers specialized for the task of object detection, that was trained on the COCO data set. The input to the model is an image, and the output is a list of estimated class probabilities for the objects detected in the image.
 
-The model is based on the [SSD Mobilenet V1 object detection model for TensorFlow](https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/detection_model_zoo.md). The model files are hosted on [IBM Cloud Object Storage](https://max-assets-prod.s3.us-south.cloud-object-storage.appdomain.cloud/max-object-detector/1.0.1/model.tar.gz). The code in this repository deploys the model as a web service in a Docker container. This repository was developed as part of the [IBM Developer Model Asset Exchange](https://developer.ibm.com/exchanges/models/) and the public API is powered by [IBM Cloud](https://ibm.biz/Bdz2XM).
+The model is based on the [SSD Mobilenet V1 and Faster RCNN ResNet101 object detection model for TensorFlow](https://github.com/tensorflow/models/blob/master/research/object_detection/g3doc/detection_model_zoo.md). The model files are hosted on IBM Cloud Object Storage: [ssd_mobilenet_v1.tar.gz](https://max-cdn.cdn.appdomain.cloud/max-object-detector/1.0.2/ssd_mobilenet_v1.tar.gz) and [faster_rcnn_resnet101.tar.gz](https://max-cdn.cdn.appdomain.cloud/max-object-detector/1.0.2/faster_rcnn_resnet101.tar.gz). The code in this repository deploys the model as a web service in a Docker container. This repository was developed as part of the [IBM Developer Model Asset Exchange](https://developer.ibm.com/exchanges/models/) and the public API is powered by [IBM Cloud](https://ibm.biz/Bdz2XM).
 
 ## Model Metadata
 | Domain | Application | Industry  | Framework | Training Data | Input Data Format |
-| ------------- | --------  | -------- | --------- | --------- | -------------- | 
-| Vision | Object Detection | General | TensorFlow | [COCO Dataset](http://mscoco.org/) | Image (RGB/HWC) | 
+| ------------- | --------  | -------- | --------- | --------- | -------------- |
+| Vision | Object Detection | General | TensorFlow | [COCO Dataset](http://mscoco.org/) | Image (RGB/HWC) |
 
 ## References
 
@@ -48,8 +48,14 @@ Y. Song, S. Guadarrama, K. Murphy_, ["Speed/accuracy trade-offs for modern convo
 
 To run the docker image, which automatically starts the model serving API, run:
 
-```
+Intel CPUs:
+```bash
 $ docker run -it -p 5000:5000 codait/max-object-detector
+```
+
+ARM CPUs (eg Raspberry Pi):
+```bash
+$ docker run -it -p 5000:5000 codait/max-object-detector:arm-arm32v7-latest
 ```
 
 This will pull a pre-built image from Docker Hub (or use an existing image if already cached locally) and run it.
@@ -65,7 +71,7 @@ You can also deploy the model on Kubernetes using the latest docker image on Doc
 
 On your Kubernetes cluster, run the following commands:
 
-```
+```bash
 $ kubectl apply -f https://raw.githubusercontent.com/IBM/MAX-Object-Detector/master/max-object-detector.yaml
 ```
 
@@ -87,20 +93,34 @@ A more elaborate tutorial on how to deploy this MAX model to production on [IBM 
 
 Clone this repository locally. In a terminal, run the following command:
 
-```
+```bash
 $ git clone https://github.com/IBM/MAX-Object-Detector.git
 ```
 
 Change directory into the repository base folder:
 
-```
+```bash
 $ cd MAX-Object-Detector
 ```
 
-To build the docker image locally, run: 
+To build the docker image locally for Intel CPUs, run:
 
-```
+```bash
 $ docker build -t max-object-detector .
+```
+
+To select a model, pass in the `--build-arg model=<desired-model>` switch:
+
+```bash
+$ docker build --build-arg model=faster_rcnn_resnet101 -t max-object-detector .
+```
+
+Currently we support two models, `ssd_mobilenet_v1` (default) and `faster_rcnn_resnet101`.
+
+For ARM CPUs (eg Raspberry Pi), run:
+
+```bash
+$ docker build -f Dockerfile.arm32v7 -t max-object-detector .
 ```
 
 All required model assets will be downloaded during the build process. _Note_ that currently this docker image is CPU only (we will add support for GPU images later).
@@ -110,7 +130,7 @@ All required model assets will be downloaded during the build process. _Note_ th
 
 To run the docker image, which automatically starts the model serving API, run:
 
-```
+```bash
 $ docker run -it -p 5000:5000 max-object-detector
 ```
 
@@ -124,7 +144,7 @@ Use the `model/predict` endpoint to load a test image (you can use one of the te
 
 You can also test it on the command line, for example:
 
-```
+```bash
 $ curl -F "image=@samples/dog-human.jpg" -XPOST http://127.0.0.1:5000/model/predict
 ```
 
@@ -162,7 +182,7 @@ You should see a JSON response like that below:
 
 You can also control the probability threshold for what objects are returned using the `threshold` argument like below:
 
-```
+```bash
 $ curl -F "image=@samples/dog-human.jpg" -XPOST http://127.0.0.1:5000/model/predict?threshold=0.5
 ```
 
@@ -171,11 +191,11 @@ The default value for `threshold` is `0.7`.
 
 ### 4. Run the Notebook
 
-[The demo notebook](demo.ipynb) walks through how to use the model to detect objects in an image and visualize the results. By default, the notebook uses the [hosted demo instance](http://max-object-detector.max.us-south.containers.appdomain.cloud), but you can use a locally running instance (see the comments in Cell 3 for details). _Note_ the demo requires `jupyter`, `matplotlib`, `Pillow`, and `requests`.
+[The demo notebook](demo.ipynb) walks through how to use the model to detect objects in an image and visualize the results. By default, the notebook uses the [hosted demo instance](http://max-object-detector.codait-prod-41208c73af8fca213512856c7a09db52-0000.us-east.containers.appdomain.cloud/), but you can use a locally running instance (see the comments in Cell 3 for details). _Note_ the demo requires `jupyter`, `matplotlib`, `Pillow`, and `requests`.
 
 Run the following command from the model repo base folder, in a new terminal window:
 
-```
+```bash
 $ jupyter notebook
 ```
 
@@ -189,10 +209,6 @@ To run the Flask API app in debug mode, edit `config.py` to set `DEBUG = True` u
 
 To stop the Docker container, type `CTRL` + `C` in your terminal.
 
-## Links
-
-* [Object Detector Web App](https://developer.ibm.com/patterns/create-a-web-app-to-interact-with-objects-detected-using-machine-learning/): A reference application created by the IBM CODAIT team that uses the Object Detector
-
 # Object Detector Web App
 
 The latest release of the [MAX Object Detector Web App](https://github.com/IBM/MAX-Object-Detector-Web-App)
@@ -205,10 +221,18 @@ and provides interactive visualization of the bounding boxes and their related l
 
 If you wish to disable the web app, start the model serving API by running:
 
-```
+```bash
 $ docker run -it -p 5000:5000 -e DISABLE_WEB_APP=true codait/max-object-detector
 ```
 
 ## Train this Model on Watson Machine Learning
 
 This model supports training from scratch on a custom dataset. Please follow the steps listed under the [training README](training/README.md) to retrain the model on [Watson Machine Learning](https://www.ibm.com/cloud/machine-learning), a deep learning as a service offering of [IBM Cloud](https://ibm.biz/Bdz2XM).
+
+## Resources and Contributions
+
+If you are interested in contributing to the Model Asset Exchange project or have any queries, please follow the instructions [here](https://github.com/CODAIT/max-central-repo).
+
+### Links
+
+* [Object Detector Web App](https://developer.ibm.com/patterns/create-a-web-app-to-interact-with-objects-detected-using-machine-learning/): A reference application created by the IBM CODAIT team that uses the Object Detector
