@@ -57,9 +57,5 @@ RUN if [ "$use_pre_trained_model" = "true" ] ; then \
 
 EXPOSE 5000
 
-<<<<<<< HEAD
-CMD ["python", "app.py"]
-=======
 # hadolint ignore=DL3025
 CMD python app.py
->>>>>>> IBM-master
